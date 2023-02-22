@@ -177,7 +177,7 @@ impl TaskHandle {
        Check whether a background task has been stopped prematurely.
     */
     pub fn is_stopped(&self) -> bool {
-        *self.stopped.acquire_read()
+        *self.stopped.acquire_read() || self.join_handle.0.as_ref().unwrap().is_finished()
     }
 }
 

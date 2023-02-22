@@ -124,12 +124,16 @@ impl WorkerMap {
         dst: Chain,
         config: &Config,
     ) -> &WorkerHandle {
-        if self.workers.contains_key(&object) {
+        let worker = if self.workers.contains_key(&object) {
             &self.workers[&object]
         } else {
             let worker = self.spawn_worker(src, dst, &object, config);
             self.workers.entry(object).or_insert(worker)
+        };
+        if worker.is_stopped() {
+            std::process::exit(-1);
         }
+        worker
     }
 
     /// Spawn a new [`WorkerHandle`], only if one does not exists already.

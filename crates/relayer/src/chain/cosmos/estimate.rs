@@ -2,7 +2,7 @@ use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tonic::codegen::http::Uri;
-use tracing::{debug, error, span, warn, Level};
+use tracing::{debug, span, warn, Level};
 
 use crate::chain::cosmos::encode::sign_tx;
 use crate::chain::cosmos::gas::gas_amount_to_fee;
