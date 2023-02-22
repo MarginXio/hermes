@@ -4,11 +4,11 @@ use core::cmp::Ordering;
 use crossbeam_channel as channel;
 use futures::{
     pin_mut,
-    stream::{self, select_all, StreamExt},
+    stream::{self, select_all},
     Stream, TryStreamExt,
 };
 use tokio::task::JoinHandle;
-use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
+use tokio::{pin, runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
 use tendermint_rpc::{
@@ -28,6 +28,7 @@ use crate::{
         stream::try_group_while,
     },
 };
+use tokio_stream::StreamExt as OtherStreamExt;
 
 mod error;
 pub use error::*;
@@ -374,6 +375,9 @@ impl EventMonitor {
         // Work around double borrow
         let rt = self.rt.clone();
 
+        let select_timeout = tokio::time::sleep(tokio::time::Duration::from_secs(1));
+        pin!(select_timeout);
+
         loop {
             if let Ok(cmd) = self.rx_cmd.try_recv() {
                 match cmd {
@@ -390,6 +394,9 @@ impl EventMonitor {
                 tokio::select! {
                     Some(batch) = batches.next() => batch,
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
+
+                    // Select timout 
+                    _ = &mut select_timeout => Err(Error::channel_recv_time_out())
                 }
             });
 

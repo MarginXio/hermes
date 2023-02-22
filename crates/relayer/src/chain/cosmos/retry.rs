@@ -1,5 +1,6 @@
-use core::time::Duration;
+use core::str::FromStr;
 use std::thread;
+use std::time::Duration;
 
 use tracing::{debug, error, instrument, warn};
 
@@ -7,7 +8,6 @@ use ibc_proto::google::protobuf::Any;
 use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
-use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
 use crate::chain::cosmos::types::account::{Account, AccountSequence};
 use crate::chain::cosmos::types::config::TxConfig;
@@ -16,6 +16,7 @@ use crate::error::Error;
 use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::{telemetry, time};
+use crate::chain::cosmos::query::account::refresh_account;
 
 // Delay in milliseconds before retrying in the case of account sequence mismatch.
 const ACCOUNT_SEQUENCE_RETRY_DELAY: u64 = 300;
@@ -76,17 +77,21 @@ async fn do_send_tx_with_account_sequence_retry(
         // Gas estimation failed with account sequence mismatch during gas estimation.
         // It indicates that the account sequence cached by hermes is stale (got < expected).
         // This can happen when the same account is used by another agent.
-        Err(ref e) if mismatch_account_sequence_number_error_requires_refresh(e) => {
+        Err(e) if mismatch_account_sequence_number_error_requires_refresh(&e) => {
             warn!(
                 error = %e,
                 "failed to estimate gas because of a mismatched account sequence number, \
                 refreshing account sequence number and retrying once",
             );
 
-            refresh_account_and_retry_send_tx_with_account_sequence(
-                config, key_pair, account, tx_memo, messages,
-            )
-            .await
+            // Extract expected account sequence from error message and retry
+            if let Some(expected_sequence) = extract_expected_account_sequence(e.to_string()) {
+                account.sequence = AccountSequence::new(expected_sequence);
+                // Now retry.
+                estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await
+            } else {
+                Err(e)
+            }
         }
 
         Err(e) if resubmit_already_received_packet(&e) => {
@@ -163,14 +168,14 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    // Extract expected account sequence from error message and retry
-    if let Some(expected_sequence) = extract_expected_account_sequence(e.to_string()) {
-        account.sequence = AccountSequence::new(expected_sequence);
-        // Now retry.
-        estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await
-    } else {
-        Err(e)
-    }
+    let key_account = key_pair.account();
+    // Re-fetch the account sequence number
+    refresh_account(&config.grpc_address, &key_account, account).await?;
+
+    // Retry after delay
+    thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
+
+    estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await
 }
 
 /// Determine whether the given error yielded by `tx_simulate`

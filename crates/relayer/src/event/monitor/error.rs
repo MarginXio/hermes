@@ -41,6 +41,9 @@ define_error! {
         ChannelRecvFailed
             |_| { "event monitor: internal message-passing failure: could not receive message" },
 
+        ChannelRecvTimeOut
+            |_| { "event monitor: internal message-passing failure: receive message timeout" },
+
         SubscriptionCancelled
             [ TraceError<RpcError> ]
             |_| { "subscription cancelled" },
