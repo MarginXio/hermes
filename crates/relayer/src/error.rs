@@ -659,6 +659,12 @@ impl GrpcStatusSubdetail {
             Some((expected, got)) => expected < got,
         }
     }
+
+    pub fn is_packet_already_received(&self) -> bool {
+        self.status
+            .message()
+            .contains("already has been received")
+    }
 }
 
 /// Assumes that the cosmos-sdk account sequence mismatch error message, that may be seen

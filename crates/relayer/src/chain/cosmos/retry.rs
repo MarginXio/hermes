@@ -89,6 +89,11 @@ async fn do_send_tx_with_account_sequence_retry(
             .await
         }
 
+        Err(e) if resubmit_already_received_packet(&e) => {
+            warn!("send_tx failed at estimate_gas step resubmit already received packet: dropping the tx");
+            Err(e)
+        }
+
         // Gas estimation succeeded but broadcast_tx_sync failed with a retry-able error.
         Ok(ref response) if response.code == Code::from(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
             warn!(
@@ -177,6 +182,15 @@ fn mismatch_account_sequence_number_error_requires_refresh(e: &Error) -> bool {
 
     match e.detail() {
         GrpcStatus(detail) => detail.is_account_sequence_mismatch_that_requires_refresh(),
+        _ => false,
+    }
+}
+
+fn resubmit_already_received_packet(e: &Error) -> bool {
+    use crate::error::ErrorDetail::*;
+
+    match e.detail() {
+        GrpcStatus(detail) => detail.is_packet_already_received(),
         _ => false,
     }
 }
