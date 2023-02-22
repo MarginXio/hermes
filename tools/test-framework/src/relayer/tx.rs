@@ -35,6 +35,7 @@ pub fn gas_config_for_test() -> GasConfig {
         gas_price,
         max_fee,
         fee_granter,
+        fixed_tx_fee: None,
     }
 }
 
@@ -65,5 +66,8 @@ pub fn new_tx_config_for_test(
         max_msg_num,
         max_tx_size,
         extension_options,
+        fee_less_msg_type_url: Vec::new(),
+        fixed_tx_fee: None,
+        max_fee_less_msg_gas: 0,
     })
 }

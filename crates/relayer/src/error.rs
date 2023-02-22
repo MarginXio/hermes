@@ -661,9 +661,7 @@ impl GrpcStatusSubdetail {
     }
 
     pub fn is_packet_already_received(&self) -> bool {
-        self.status
-            .message()
-            .contains("already has been received")
+        self.status.message().contains("already has been received")
     }
 }
 

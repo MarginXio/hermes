@@ -289,7 +289,13 @@ impl SigningKeyPair for Secp256k1KeyPair {
         address_fmt: &AddressFormat,
         account_prefix: &str,
     ) -> Result<Self, Error> {
-        Self::from_mnemonic_internal(mnemonic, hd_path, address_type.try_into()?, address_fmt,account_prefix)
+        Self::from_mnemonic_internal(
+            mnemonic,
+            hd_path,
+            address_type.try_into()?,
+            address_fmt,
+            account_prefix,
+        )
     }
 
     fn account(&self) -> String {

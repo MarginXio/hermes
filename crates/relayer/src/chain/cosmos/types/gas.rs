@@ -1,3 +1,4 @@
+use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 
 use crate::chain::cosmos::calculate_fee;
@@ -16,6 +17,7 @@ pub struct GasConfig {
     pub gas_price: GasPrice,
     pub max_fee: Fee,
     pub fee_granter: String,
+    pub fixed_tx_fee: Option<Fee>,
 }
 
 impl<'a> From<&'a ChainConfig> for GasConfig {
@@ -27,8 +29,25 @@ impl<'a> From<&'a ChainConfig> for GasConfig {
             gas_price: config.gas_price.clone(),
             max_fee: max_fee_from_config(config),
             fee_granter: fee_granter_from_config(config),
+            fixed_tx_fee: fixed_fee_from_config(config),
         }
     }
+}
+
+fn fixed_fee_from_config(config: &ChainConfig) -> Option<Fee> {
+    let fixed_fee = config.fixed_tx_fee.as_ref()?;
+    let fee_granter = fee_granter_from_config(config);
+    let max_gas = max_gas_from_config(config);
+
+    Some(Fee {
+        amount: vec![Coin {
+            denom: fixed_fee.denom.clone(),
+            amount: fixed_fee.amount.to_string(),
+        }],
+        gas_limit: max_gas,
+        payer: "".to_string(),
+        granter: fee_granter,
+    })
 }
 
 /// The default amount of gas the relayer is willing to pay for a transaction,

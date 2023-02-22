@@ -7,7 +7,7 @@ use tendermint_rpc::{HttpClient, Url};
 
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::{MaxMsgNum, MaxTxSize};
-use crate::config::{AddressType, ChainConfig};
+use crate::config::{AddressType, ChainConfig, FixedFee};
 use crate::error::Error;
 
 #[derive(Debug, Clone)]
@@ -22,6 +22,9 @@ pub struct TxConfig {
     pub max_msg_num: MaxMsgNum,
     pub max_tx_size: MaxTxSize,
     pub extension_options: Vec<Any>,
+    pub fee_less_msg_type_url: Vec<String>,
+    pub max_fee_less_msg_gas: u64,
+    pub fixed_tx_fee: Option<FixedFee>,
 }
 
 impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
@@ -53,6 +56,9 @@ impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
             max_msg_num: config.max_msg_num,
             max_tx_size: config.max_tx_size,
             extension_options,
+            fee_less_msg_type_url: config.fee_less_msg_type_url.clone(),
+            max_fee_less_msg_gas: config.max_fee_less_msg_gas,
+            fixed_tx_fee: config.fixed_tx_fee.clone(),
         })
     }
 }

@@ -836,10 +836,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         if let Ok(config) = self.src_chain.config() {
             if let Some(refresh_period) = config.client_refresh_period {
                 refresh_window = Some(refresh_period);
-            }else {
+            } else {
                 refresh_window = client_state.refresh_period();
             }
-        }else {
+        } else {
             refresh_window = client_state.refresh_period();
         }
 

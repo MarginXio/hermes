@@ -177,6 +177,10 @@ pub mod default {
     pub fn auto_register_counterparty_payee() -> bool {
         false
     }
+
+    pub fn max_fee_less_msg_gas() -> u64 {
+        0
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -420,10 +424,7 @@ impl Display for AddressType {
 }
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(
-rename_all = "lowercase",
-deny_unknown_fields
-)]
+#[serde(rename_all = "lowercase", deny_unknown_fields)]
 pub enum AddressFormat {
     Bech32,
     Ethermint,
@@ -440,6 +441,27 @@ impl Display for AddressFormat {
             AddressFormat::Bech32 => write!(f, "bech32"),
             AddressFormat::Ethermint => write!(f, "ethermint"),
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FixedFee {
+    pub amount: u64,
+    pub denom: String,
+}
+
+impl FixedFee {
+    pub const fn new(price: u64, denom: String) -> Self {
+        Self {
+            amount: price,
+            denom,
+        }
+    }
+}
+
+impl Display for FixedFee {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "{}{}", self.amount, self.denom)
     }
 }
 
@@ -527,8 +549,17 @@ pub struct ChainConfig {
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
 
-    #[serde(default,with = "humantime_serde")]
+    #[serde(default, with = "humantime_serde")]
     pub client_refresh_period: Option<Duration>,
+
+    #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
+    pub fee_less_msg_type_url: Vec<String>,
+
+    #[serde(default = "default::max_fee_less_msg_gas")]
+    pub max_fee_less_msg_gas: u64,
+
+    #[serde(default)]
+    pub fixed_tx_fee: Option<FixedFee>,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

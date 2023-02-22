@@ -381,7 +381,7 @@ pub fn commitments_on_chain(
     let limit;
     if let Ok(config) = chain.config() {
         limit = config.max_msg_num.to_usize() - 1;
-    }else {
+    } else {
         limit = 20;
     }
     // get the packet commitments on the counterparty/ source chain
@@ -394,7 +394,7 @@ pub fn commitments_on_chain(
                 offset: 0,
                 limit: limit as u64,
                 count_total: false,
-                reverse: false
+                reverse: false,
             }),
         })
         .map_err(Error::relayer)?;

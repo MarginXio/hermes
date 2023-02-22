@@ -28,8 +28,8 @@ use std::{collections::HashMap, marker::Send};
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
 
-use tokio::task::{JoinError, JoinHandle};
 use ibc_relayer::config::AddressFormat;
+use tokio::task::{JoinError, JoinHandle};
 
 /// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
@@ -136,6 +136,9 @@ where
         sequential_batch_tx: false,
         extension_options: Vec::new(),
         client_refresh_period: None,
+        fee_less_msg_type_url: Vec::new(),
+        fixed_tx_fee: None,
+        max_fee_less_msg_gas: 0,
     })
 }
 

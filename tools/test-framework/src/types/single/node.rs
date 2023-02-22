@@ -8,11 +8,11 @@ use eyre::eyre;
 use eyre::Report as Error;
 use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
+use ibc_relayer::config::AddressFormat;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
-use ibc_relayer::config::AddressFormat;
 
 use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;
@@ -160,6 +160,9 @@ impl FullNode {
             extension_options: Default::default(),
             sequential_batch_tx: false,
             client_refresh_period: None,
+            fee_less_msg_type_url: Vec::new(),
+            fixed_tx_fee: None,
+            max_fee_less_msg_gas: 0,
         })
     }
 

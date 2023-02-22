@@ -121,19 +121,19 @@ pub async fn query_packets_from_txs(
             .await
             .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
-        debug!("packet_from_tx_search_response txs.len: {:?}",response.txs.len());
+        debug!(
+            "packet_from_tx_search_response txs.len: {:?}",
+            response.txs.len()
+        );
 
         if response.txs.is_empty() {
             continue;
         }
 
         for tx in response.txs {
-            if let Ok(Some(event)) = packet_from_tx_search_response(
-                chain_id,
-                &request,
-                *seq,
-                tx.clone(),
-            ) {
+            if let Ok(Some(event)) =
+                packet_from_tx_search_response(chain_id, &request, *seq, tx.clone())
+            {
                 result.push(event);
             }
         }

@@ -24,19 +24,43 @@ pub async fn estimate_tx_fees(
 ) -> Result<Fee, Error> {
     let gas_config = &config.gas_config;
 
-    debug!(
-        "max fee, for use in tx simulation: {}",
-        PrettyFee(&gas_config.max_fee)
-    );
+    let mut feeless = !config.fee_less_msg_type_url.is_empty();
+    for msg in messages {
+        let mut found = false;
+        for url in &config.fee_less_msg_type_url {
+            if msg.type_url.eq(url) {
+                found = true;
+                break;
+            }
+        }
 
-    let signed_tx = sign_tx(
-        config,
-        key_pair,
-        account,
-        tx_memo,
-        messages,
-        &gas_config.max_fee,
-    )?;
+        if !found {
+            feeless = false;
+            break;
+        }
+    }
+
+    let fee;
+    if feeless {
+        let gas_limit;
+        if config.max_fee_less_msg_gas != 0 {
+            gas_limit = config.max_fee_less_msg_gas * messages.len() as u64;
+        } else {
+            gas_limit = gas_config.max_fee.gas_limit;
+        }
+        fee = Fee {
+            amount: vec![],
+            gas_limit,
+            payer: gas_config.max_fee.payer.clone(),
+            granter: gas_config.max_fee.granter.clone(),
+        }
+    } else {
+        fee = gas_config.max_fee.clone()
+    }
+
+    debug!("max fee, for use in tx simulation: {}", PrettyFee(&fee));
+
+    let signed_tx = sign_tx(config, key_pair, account, tx_memo, messages, &fee)?;
 
     let tx = Tx {
         body: Some(signed_tx.body),
@@ -44,8 +68,22 @@ pub async fn estimate_tx_fees(
         signatures: signed_tx.signatures,
     };
 
-    let estimated_fee =
+    let mut estimated_fee =
         estimate_fee_with_tx(gas_config, &config.grpc_address, &config.chain_id, tx).await?;
+
+    if let Some(fixed_fee) = &gas_config.fixed_tx_fee {
+        estimated_fee = fixed_fee.clone();
+    }
+
+    if feeless {
+        estimated_fee = fee
+    }
+
+    debug!(
+        "send_tx: using {} gas, fee {}",
+        estimated_fee.gas_limit,
+        PrettyFee(&estimated_fee)
+    );
 
     Ok(estimated_fee)
 }
