@@ -7,6 +7,7 @@ use tendermint::abci::Event;
 use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
+use tracing::debug;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::cosmos::types::events;
@@ -109,31 +110,32 @@ pub async fn query_packets_from_txs(
 
     for seq in &request.sequences {
         // query first (and only) Tx that includes the event specified in the query request
-        let mut response = rpc_client
+        let response = rpc_client
             .tx_search(
                 packet_query(request, *seq),
                 false,
                 1,
-                1, // get only the first Tx matching the query
+                u8::MAX, // get only the first Tx matching the query
                 Order::Ascending,
             )
             .await
             .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
-        debug_assert!(
-            response.txs.len() <= 1,
-            "packet_from_tx_search_response: unexpected number of txs"
-        );
+        debug!("packet_from_tx_search_response txs.len: {:?}",response.txs.len());
 
         if response.txs.is_empty() {
             continue;
         }
 
-        let tx = response.txs.remove(0);
-        let event = packet_from_tx_search_response(chain_id, request, *seq, tx)?;
-
-        if let Some(event) = event {
-            result.push(event);
+        for tx in response.txs {
+            if let Ok(Some(event)) = packet_from_tx_search_response(
+                chain_id,
+                &request,
+                *seq,
+                tx.clone(),
+            ) {
+                result.push(event);
+            }
         }
     }
     Ok(result)
