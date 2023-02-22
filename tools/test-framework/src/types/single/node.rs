@@ -157,6 +157,7 @@ impl FullNode {
             proof_specs: Default::default(),
             extension_options: Default::default(),
             sequential_batch_tx: false,
+            client_refresh_period: None,
         })
     }
 

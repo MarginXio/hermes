@@ -133,6 +133,7 @@ where
         address_type: AddressType::default(),
         sequential_batch_tx: false,
         extension_options: Vec::new(),
+        client_refresh_period: None,
     })
 }
 

@@ -832,7 +832,16 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         // The refresh_window is the maximum duration
         // we can backoff between subsequent client updates.
-        let refresh_window = client_state.refresh_period();
+        let refresh_window;
+        if let Ok(config) = self.src_chain.config() {
+            if let Some(refresh_period) = config.client_refresh_period {
+                refresh_window = Some(refresh_period);
+            }else {
+                refresh_window = client_state.refresh_period();
+            }
+        }else {
+            refresh_window = client_state.refresh_period();
+        }
 
         match (elapsed, refresh_window) {
             (None, _) | (_, None) => Ok(None),
