@@ -29,6 +29,7 @@ use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
 
 use tokio::task::{JoinError, JoinHandle};
+use ibc_relayer::config::AddressFormat;
 
 /// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
@@ -131,6 +132,7 @@ where
         },
         packet_filter: packet_filter.unwrap_or_default(),
         address_type: AddressType::default(),
+        address_format: AddressFormat::default(),
         sequential_batch_tx: false,
         extension_options: Vec::new(),
         client_refresh_period: None,

@@ -238,6 +238,7 @@ pub fn restore_key(
                 &mnemonic_content,
                 hdpath,
                 &config.address_type,
+                &config.address_format,
                 keyring.account_prefix(),
             )?;
 

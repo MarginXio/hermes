@@ -20,3 +20,19 @@ pub fn keccak256_hash(bytes: &[u8]) -> [u8; 32] {
     hasher.finalize(&mut output);
     output
 }
+
+pub fn eth_address_checksum(input: &Vec<u8>) -> String {
+    let encode = hex::encode(input).to_lowercase();
+    let address_hash = hex::encode(keccak256_hash(encode.as_bytes()));
+    encode
+        .char_indices()
+        .fold(String::from("0x"), |mut acc, (index, address_char)| {
+            let n = u16::from_str_radix(&address_hash[index..index + 1], 16).unwrap();
+            if n > 7 {
+                acc.push_str(&address_char.to_uppercase().to_string())
+            } else {
+                acc.push(address_char)
+            }
+            acc
+        })
+}

@@ -12,6 +12,7 @@ use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
+use ibc_relayer::config::AddressFormat;
 
 use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;
@@ -153,6 +154,7 @@ impl FullNode {
             gas_price: config::GasPrice::new(0.001, "stake".to_string()),
             packet_filter: Default::default(),
             address_type: chain_type.address_type(),
+            address_format: AddressFormat::default(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
             extension_options: Default::default(),

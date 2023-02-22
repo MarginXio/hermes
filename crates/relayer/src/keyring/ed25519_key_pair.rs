@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use signature::Signer;
 
 use super::{errors::Error, KeyFile, KeyType, SigningKeyPair};
-use crate::config::AddressType;
+use crate::config::{AddressFormat, AddressType};
 
 pub fn private_key_from_mnemonic(
     mnemonic_words: &str,
@@ -132,6 +132,7 @@ impl SigningKeyPair for Ed25519KeyPair {
         mnemonic: &str,
         hd_path: &StandardHDPath,
         address_type: &AddressType,
+        _address_fmt: &AddressFormat,
         _account_prefix: &str,
     ) -> Result<Self, Error> {
         Self::from_mnemonic_internal(mnemonic, hd_path, address_type.try_into()?)

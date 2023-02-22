@@ -419,6 +419,30 @@ impl Display for AddressType {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(
+rename_all = "lowercase",
+deny_unknown_fields
+)]
+pub enum AddressFormat {
+    Bech32,
+    Ethermint,
+}
+impl Default for AddressFormat {
+    fn default() -> Self {
+        AddressFormat::Bech32
+    }
+}
+
+impl Display for AddressFormat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match self {
+            AddressFormat::Bech32 => write!(f, "bech32"),
+            AddressFormat::Ethermint => write!(f, "ethermint"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
@@ -498,6 +522,8 @@ pub struct ChainConfig {
 
     #[serde(default)]
     pub address_type: AddressType,
+    #[serde(default)]
+    pub address_format: AddressFormat,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub extension_options: Vec<ExtensionOption>,
 

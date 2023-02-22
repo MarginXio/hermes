@@ -4,7 +4,7 @@ use hdpath::StandardHDPath;
 use serde::{de::DeserializeOwned, Serialize};
 
 use super::{errors::Error, KeyFile, KeyType};
-use crate::config::AddressType;
+use crate::config::{AddressFormat, AddressType};
 
 pub trait SigningKeyPair {
     const KEY_TYPE: KeyType;
@@ -25,6 +25,7 @@ pub trait SigningKeyPair {
         mnemonic: &str,
         hd_path: &StandardHDPath,
         address_type: &AddressType,
+        address_fmt: &AddressFormat,
         account_prefix: &str,
     ) -> Result<Self, Error>
     where

@@ -20,7 +20,8 @@ use super::{
     pub_key::EncodedPubKey,
     KeyFile, KeyType, SigningKeyPair,
 };
-use crate::config::AddressType;
+use crate::config::{AddressFormat, AddressType};
+use crate::keyring::key_utils::eth_address_checksum;
 
 pub fn private_key_from_mnemonic(
     mnemonic_words: &str,
@@ -214,12 +215,17 @@ impl Secp256k1KeyPair {
         mnemonic: &str,
         hd_path: &StandardHDPath,
         address_type: Secp256k1AddressType,
+        fmt: &AddressFormat,
         account_prefix: &str,
     ) -> Result<Self, Error> {
         let private_key = private_key_from_mnemonic(mnemonic, hd_path)?;
         let public_key = ExtendedPubKey::from_priv(&Secp256k1::signing_only(), &private_key);
         let address = get_address(&public_key.public_key, address_type);
-        let account = encode_address(account_prefix, &address)?;
+
+        let account = match fmt {
+            AddressFormat::Bech32 => encode_address(account_prefix, &address)?,
+            AddressFormat::Ethermint => eth_address_checksum(&address.to_vec()),
+        };
 
         Ok(Self {
             private_key: private_key.private_key,
@@ -280,9 +286,10 @@ impl SigningKeyPair for Secp256k1KeyPair {
         mnemonic: &str,
         hd_path: &StandardHDPath,
         address_type: &AddressType,
+        address_fmt: &AddressFormat,
         account_prefix: &str,
     ) -> Result<Self, Error> {
-        Self::from_mnemonic_internal(mnemonic, hd_path, address_type.try_into()?, account_prefix)
+        Self::from_mnemonic_internal(mnemonic, hd_path, address_type.try_into()?, address_fmt,account_prefix)
     }
 
     fn account(&self) -> String {
