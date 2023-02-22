@@ -378,12 +378,24 @@ pub fn commitments_on_chain(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<(Vec<Sequence>, Height), Error> {
+    let limit;
+    if let Ok(config) = chain.config() {
+        limit = config.max_msg_num.to_usize() - 1;
+    }else {
+        limit = 20;
+    }
     // get the packet commitments on the counterparty/ source chain
     let (mut commit_sequences, response_height) = chain
         .query_packet_commitments(QueryPacketCommitmentsRequest {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
-            pagination: Some(PageRequest::all()),
+            pagination: Some(PageRequest {
+                key: vec![],
+                offset: 0,
+                limit: limit as u64,
+                count_total: false,
+                reverse: false
+            }),
         })
         .map_err(Error::relayer)?;
 
