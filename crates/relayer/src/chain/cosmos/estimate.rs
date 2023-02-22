@@ -134,7 +134,7 @@ async fn estimate_gas_with_tx(
         }
 
         Err(e) => {
-            error!(
+            warn!(
                 "failed to simulate tx. propagating error to caller: {}",
                 e.detail()
             );
