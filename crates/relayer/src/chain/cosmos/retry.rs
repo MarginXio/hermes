@@ -9,7 +9,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
-use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::account::{Account, AccountSequence};
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
@@ -163,14 +163,14 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    let key_account = key_pair.account();
-    // Re-fetch the account sequence number
-    refresh_account(&config.grpc_address, &key_account, account).await?;
-
-    // Retry after delay
-    thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
-
-    estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await
+    // Extract expected account sequence from error message and retry
+    if let Some(expected_sequence) = extract_expected_account_sequence(e.to_string()) {
+        account.sequence = AccountSequence::new(expected_sequence);
+        // Now retry.
+        estimate_fee_and_send_tx(config, key_pair, account, tx_memo, messages).await
+    } else {
+        Err(e)
+    }
 }
 
 /// Determine whether the given error yielded by `tx_simulate`
@@ -193,4 +193,12 @@ fn resubmit_already_received_packet(e: &Error) -> bool {
         GrpcStatus(detail) => detail.is_packet_already_received(),
         _ => false,
     }
+}
+
+fn extract_expected_account_sequence(error_message: String) -> Option<u64> {
+    let prefix = "expected ";
+    let suffix = ", got";
+    let start = error_message.find(prefix)? + prefix.len();
+    let end = error_message.find(suffix)?;
+    u64::from_str(&*error_message[start..end].to_string()).ok()
 }
