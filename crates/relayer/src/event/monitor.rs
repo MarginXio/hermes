@@ -8,7 +8,7 @@ use futures::{
     Stream, TryStreamExt,
 };
 use tokio::task::JoinHandle;
-use tokio::{pin, runtime::Runtime as TokioRuntime, sync::mpsc};
+use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
 use tendermint_rpc::{
@@ -375,9 +375,6 @@ impl EventMonitor {
         // Work around double borrow
         let rt = self.rt.clone();
 
-        let select_timeout = tokio::time::sleep(tokio::time::Duration::from_secs(1));
-        pin!(select_timeout);
-
         loop {
             if let Ok(cmd) = self.rx_cmd.try_recv() {
                 match cmd {
@@ -396,7 +393,7 @@ impl EventMonitor {
                     Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
 
                     // Select timout 
-                    _ = &mut select_timeout => Err(Error::channel_recv_time_out())
+                    _ = tokio::time::sleep(tokio::time::Duration::from_secs(30)) => Err(Error::channel_recv_time_out())
                 }
             });
 
