@@ -21,6 +21,7 @@ use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
+use ibc_relayer::util::retry::{Fixed, retry_with_index, RetryResult};
 
 static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
 static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-connection <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
@@ -186,11 +187,31 @@ impl CreateChannelCommand {
             "Creating new clients, new connection, and a new channel with order {}",
             self.order
         );
+        let client_a = retry_with_index(Fixed::from(core::time::Duration::from_secs(5)), |_| {
+            match ForeignClient::new(chains.src.clone(), chains.dst.clone()) {
+                Ok(client) => {
+                    RetryResult::Ok(client)
+                }
+                Err(e) => {
+                    error!("create client error: {:?}, wait for 5s retry",e);
+                    RetryResult::Retry(e)
+                }
+            }
+        })
+        .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let client_a = ForeignClient::new(chains.src.clone(), chains.dst.clone())
-            .unwrap_or_else(exit_with_unrecoverable_error);
-        let client_b = ForeignClient::new(chains.dst.clone(), chains.src)
-            .unwrap_or_else(exit_with_unrecoverable_error);
+        let client_b = retry_with_index(Fixed::from(core::time::Duration::from_secs(5)), |_| {
+            match ForeignClient::new(chains.dst.clone(), chains.src.clone()) {
+                Ok(client) => {
+                    RetryResult::Ok(client)
+                }
+                Err(e) => {
+                    error!("create client error: {:?}, wait for 5s retry",e);
+                    RetryResult::Retry(e)
+                }
+            }
+        })
+        .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Create the connection.
         let con = Connection::new(client_a, client_b, connection_delay())
