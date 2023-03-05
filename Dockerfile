@@ -3,7 +3,7 @@
 # builder stage
 #
 # ---------------------------------------------------------------------------------------------------------------
-FROM rust:1.60-alpine3.14 AS builder
+FROM rust:1.67.1-alpine3.17 AS builder
 
 WORKDIR /home/root/src
 USER root
@@ -29,6 +29,8 @@ COPY ./tools ./tools
 COPY Cargo.toml .
 COPY Cargo.lock .
 
+ENV http_proxy=http://192.168.31.230:8889
+ENV https_proxy=http://192.168.31.230:8889
 RUN cargo fetch
 
 # copy source code
