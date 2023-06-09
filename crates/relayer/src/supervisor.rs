@@ -605,8 +605,7 @@ fn init_subscriptions<Chain: ChainHandle>(
                     "failed to spawn chain runtime for {}: {}",
                     chain_config.id, e
                 );
-
-                continue;
+                return Err(Error::no_chains_available());
             }
         };
 
