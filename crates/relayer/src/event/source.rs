@@ -141,3 +141,21 @@ pub mod queries {
         Query::eq("message.module", "interchainquery")
     }
 }
+
+#[cfg(test)]
+mod test {
+    use tendermint_rpc::Client;
+    use super::*;
+    #[test]
+    fn test_fxcore_rpc() {
+        //let http_client = HttpClient::new("https://testnet-fx-json.functionx.io:26657").unwrap();
+        let http_client = HttpClient::new("http://localhost:26657").unwrap();
+        // 10255532
+        // let height = 10255532u32;
+        let height = 2u32;
+        let result_ft= http_client.block_results(tendermint::block::Height::from(height));
+        let rt = TokioRuntime::new().unwrap();
+        let result = rt.block_on(result_ft).unwrap();
+        println!("{:?}", result)
+    }
+}
